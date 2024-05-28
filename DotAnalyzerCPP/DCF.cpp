@@ -128,8 +128,40 @@ public:
 		cv::imwrite("temp_closing.bmp", temp_closing);
 
 		// 기존 Contour 추출
-		cv::findContours(temp_closing, contours, hierarchy, cv::RetrievalModes::RETR_TREE, cv::ContourApproximationModes::CHAIN_APPROX_NONE);
+		//cv::findContours(temp_closing, contours, hierarchy, cv::RetrievalModes::RETR_TREE, cv::ContourApproximationModes::CHAIN_APPROX_NONE);
 		
+		// 수정 2024-05-27 Canny Edge로 Contour 추출
+		cv::Mat canny_img;
+		cv::Canny(temp_closing, canny_img, thres, 255);
+		cv::imwrite("canny_img.bmp", canny_img);
+
+		std::vector<cv::Vec3f> circles;
+		cv::HoughCircles(
+			canny_img, circles, cv::HOUGH_GRADIENT, 1.2, 20, 50, 20, 10, 16
+		);
+
+		// Convert the image to BGR for color drawing
+		cv::Mat draw_circle = cv::Mat(height, width, CV_8UC1, cv::Scalar(0, 0, 0));
+
+		// Draw the circles
+		for (size_t i = 0; i < circles.size(); i++) {
+			cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
+			int radius = cvRound(circles[i][2]);
+			cv::circle(draw_circle, center, radius, cv::Scalar(255, 255, 255), -4);
+		}
+		cv::imwrite("draw_circle.bmp", draw_circle);
+		cv::Mat invert_circle_img = cv::Mat(height, width, CV_8UC1, cv::Scalar(0, 0, 0));
+		cv::bitwise_not(draw_circle, invert_circle_img);
+		
+		cv::imwrite("invert_circle_img.bmp", invert_circle_img);
+
+		cv::findContours(invert_circle_img, contours, hierarchy, cv::RetrievalModes::RETR_TREE, cv::ContourApproximationModes::CHAIN_APPROX_NONE);
+
+		cv::Mat contours_img;
+		cv::cvtColor(img, contours_img, cv::COLOR_GRAY2BGR);
+		cv::drawContours(contours_img, contours, -1, cv::Scalar(0, 255, 0), 2);
+		cv::imwrite("contours_img.bmp", contours_img);
+
 		auto imgmof = cv::Mat_<unsigned char>{ grayInv };
 		auto imgptr = imgmof.begin();
 
