@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using OpenCvSharp;
 using System.Drawing.Imaging;
 using System.Diagnostics;
+using Microsoft.WindowsAPICodePack.Dialogs;
 
 namespace WindowsFormsApp1
 {
@@ -22,6 +23,12 @@ namespace WindowsFormsApp1
         private int ImageHeight = 3000;
         private int ImageWidth = 4080;
         private int ImageCH = 3;
+
+        bool IsSingleMode = false;
+        bool IsTotalMode = false;
+
+        private string TargetPath = "";
+        private string ImagePath = "";
 
         private float dp = 0.5f; //dot 간격 [mm]
 
@@ -51,7 +58,8 @@ namespace WindowsFormsApp1
             IntPtr GrabPtr = IntPtr.Zero;
             // var temp = new Mat(@"C:\Users\진소미\Desktop\DotTarget\Top Macro.bmp");
             //GetDotCenters의 Input Image는 Gray(1 channel) Image가 되어야 함.
-            var colorImg = new Mat(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\Top Macro.bmp");
+            //var colorImg = new Mat(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\Top Macro.bmp");
+            var colorImg = new Mat(TargetPath);
             var grayImg = colorImg.CvtColor(ColorConversionCodes.BGR2GRAY);
             var src = grayImg.DataPointer;
 
@@ -144,11 +152,25 @@ namespace WindowsFormsApp1
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            //LoadVectorMap("_TopCorrection.dat");
-            LoadVectorMap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0528_보간법 비교\Top\_TopCorrection.dat");
+            LoadVectorMap("_TopCorrection.dat");
+            //LoadVectorMap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0528_보간법 비교\Top\_TopCorrection.dat");
             unsafe
             {
                 //Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\타겟2\btm.bmp");
+                //Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0529_채널이미지_왜곡보정\Top\[0004]TopDf.jpg");
+
+                if (IsSingleMode)
+                {
+                    var backList = Directory.GetFiles(ImagePath, "*Back*.jpg");
+                    var colorList = Directory.GetFiles(ImagePath, "*Color*.jpg");
+                    var AreaList = Directory.GetFiles(ImagePath, "*ColorArea*.jpg");
+                    var DFList = Directory.GetFiles(ImagePath, "*Df*.jpg");
+                }
+                else
+                {
+
+                }
+
                 Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0529_채널이미지_왜곡보정\Top\[0004]TopDf.jpg");
                 BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
                 IntPtr temp_data = tedata.Scan0;
@@ -188,6 +210,51 @@ namespace WindowsFormsApp1
 
             extractTime.Text = elapsedTime.TotalMilliseconds + " ms";
         }
-    }
 
+        private void LoadFileBtn_Click(object sender, EventArgs e)
+        {
+            CommonOpenFileDialog folderDialog = new CommonOpenFileDialog()
+            { InitialDirectory = "", IsFolderPicker = true };
+            {
+                if (folderDialog.ShowDialog() == CommonFileDialogResult.Ok)
+                {
+                    FilePathText.Text = folderDialog.FileName;
+
+                    ImagePath = folderDialog.FileName;
+                    ImageListBox.Items.Clear();
+
+                    string[] files = Directory.GetFiles(FilePathText.Text);
+
+                    foreach (string file in files)
+                    {
+                        ImageListBox.Items.Add(Path.GetFileName(file));
+                    }
+                }
+            }
+        }
+
+        private void ChkSingle_CheckedChanged(object sender, EventArgs e)
+        {
+            IsSingleMode = true;
+            IsTotalMode = false;
+        }
+
+        private void ChkTotal_CheckedChanged(object sender, EventArgs e)
+        {
+            IsSingleMode = false;
+            IsTotalMode = true;
+        }
+
+        private void BtnTarget_Click(object sender, EventArgs e)
+        {
+            CommonOpenFileDialog TargetFileDialog = new CommonOpenFileDialog()
+            { InitialDirectory = "", IsFolderPicker = false };
+            {
+                if (TargetFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
+                {
+                    TextTargetPath.Text = Path.GetFileName(TargetFileDialog.FileName);
+                }
+            }
+        }
+    }
 }
