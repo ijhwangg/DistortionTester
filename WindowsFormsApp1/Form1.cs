@@ -51,7 +51,7 @@ namespace WindowsFormsApp1
             IntPtr GrabPtr = IntPtr.Zero;
             // var temp = new Mat(@"C:\Users\진소미\Desktop\DotTarget\Top Macro.bmp");
             //GetDotCenters의 Input Image는 Gray(1 channel) Image가 되어야 함.
-            var colorImg = new Mat(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\타겟2\top.bmp");
+            var colorImg = new Mat(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\Top Macro.bmp");
             var grayImg = colorImg.CvtColor(ColorConversionCodes.BGR2GRAY);
             var src = grayImg.DataPointer;
 
@@ -144,12 +144,12 @@ namespace WindowsFormsApp1
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            LoadVectorMap("_TopCorrection.dat");
-            //LoadVectorMap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\보간법 비교\Btm\_TopCorrection.dat");
+            //LoadVectorMap("_TopCorrection.dat");
+            LoadVectorMap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0528_보간법 비교\Top\_TopCorrection.dat");
             unsafe
             {
                 //Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\타겟2\btm.bmp");
-                Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\제품\하부\[0001]Btm.bmp");
+                Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0529_채널이미지_왜곡보정\Top\[0004]TopDf.jpg");
                 BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
                 IntPtr temp_data = tedata.Scan0;
 
