@@ -24,11 +24,16 @@ namespace WindowsFormsApp1
         private int ImageWidth = 4080;
         private int ImageCH = 3;
 
-        bool IsSingleMode = false;
-        bool IsTotalMode = false;
+        private bool isHandlingEvent = false;
+        private bool IsSingleMode = false;
+        private bool IsTotalMode = false;
+        private bool SelectVectorMap = false;
 
+        private string VectorMapPath = "";
         private string TargetPath = "";
         private string ImagePath = "";
+        private string SelectImage = "";
+        private string SavePath = "DistortionResult";
 
         private float dp = 0.5f; //dot 간격 [mm]
 
@@ -147,43 +152,139 @@ namespace WindowsFormsApp1
             }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void BtnExtraction_Click(object sender, EventArgs e)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            LoadVectorMap("_TopCorrection.dat");
-            //LoadVectorMap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0528_보간법 비교\Top\_TopCorrection.dat");
-            unsafe
+            if (SelectVectorMap)
             {
-                //Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\타겟2\btm.bmp");
-                //Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0529_채널이미지_왜곡보정\Top\[0004]TopDf.jpg");
+                LoadVectorMap(VectorMapPath);
+            }
+            else
+            {
+                LoadVectorMap("_TopCorrection.dat");
+            }
 
-                if (IsSingleMode)
+            if (!IsSingleMode && !IsTotalMode)
+            {
+                MessageBox.Show($"검사 모드를 선택해주세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            else if (IsSingleMode)
+            {
+                if (SelectImage == "")
                 {
-                    var backList = Directory.GetFiles(ImagePath, "*Back*.jpg");
-                    var colorList = Directory.GetFiles(ImagePath, "*Color*.jpg");
-                    var AreaList = Directory.GetFiles(ImagePath, "*ColorArea*.jpg");
-                    var DFList = Directory.GetFiles(ImagePath, "*Df*.jpg");
+                    MessageBox.Show($"이미지가 선택되지 않았습니다. 이미지를 선택해주세요!.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 else
                 {
+                    var gn = SelectImage.LastIndexOf("Back");
+                    var ImgNum = SelectImage.Substring(0, gn);
 
+                    var backList = ImagePath + "\\" + ImgNum + "Back.jpg";
+                    var colorList = ImagePath + "\\" + ImgNum + "Color.jpg";
+                    var AreaList = ImagePath + "\\" + ImgNum + "ColorArea.jpg";
+                    var DFList = ImagePath + "\\" + ImgNum + "Df.jpg";
+
+                    {
+                        Bitmap te = new Bitmap(colorList);
+                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                        IntPtr temp_data = tedata.Scan0;
+
+                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
+
+                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
+                        distortion.Save($@"{SavePath}\{ImgNum}" + "Color.bmp", ImageFormat.Bmp);
+                        te.UnlockBits(tedata);
+                        te.Dispose();
+                    }
+                    {
+                        Bitmap te = new Bitmap(AreaList);
+                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                        IntPtr temp_data = tedata.Scan0;
+
+                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
+
+                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
+                        distortion.Save($@"{SavePath}\{ImgNum}" + "ColorArea.bmp", ImageFormat.Bmp);
+                        te.UnlockBits(tedata);
+                        te.Dispose();
+                    }
+                    {
+                        Bitmap te = new Bitmap(DFList);
+                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                        IntPtr temp_data = tedata.Scan0;
+
+                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
+
+                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
+                        distortion.Save($@"{SavePath}\{ImgNum}" + "Df.bmp", ImageFormat.Bmp);
+                        te.UnlockBits(tedata);
+                        te.Dispose();
+                    }
                 }
+            }
+            else
+            {
+                var backList = Directory.GetFiles(ImagePath, "*Back*.jpg");
+                var colorList = Directory.GetFiles(ImagePath, "*Color*.jpg");
+                var AreaList = Directory.GetFiles(ImagePath, "*ColorArea*.jpg");
+                var DFList = Directory.GetFiles(ImagePath, "*Df*.jpg");
 
-                Bitmap te = new Bitmap(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\0529_채널이미지_왜곡보정\Top\[0004]TopDf.jpg");
-                BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                IntPtr temp_data = tedata.Scan0;
+                for (int i = 0; i < backList.Length; i++)
+                {
+                    var gn = backList[i].LastIndexOf("Back");
+                    var ImgNum = backList[i].Substring(gn - 9, 9);
 
-                dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
+                    {
+                        Bitmap te = new Bitmap(backList[i]);
+                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                        IntPtr temp_data = tedata.Scan0;
 
-                Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
+                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
 
-                te.UnlockBits(tedata);
+                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
+                        distortion.Save($@"{SavePath}\{ImgNum}" + "Back.bmp", ImageFormat.Bmp);
+                        te.UnlockBits(tedata);
+                        te.Dispose();
+                    }
+                    {
+                        Bitmap te = new Bitmap(colorList[i]);
+                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                        IntPtr temp_data = tedata.Scan0;
 
-                distortion.Save("correct_distortion.bmp", ImageFormat.Bmp);
+                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
 
-                te.Dispose();
+                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
+                        distortion.Save($@"{SavePath}\{ImgNum}" + "Color.bmp", ImageFormat.Bmp);
+                        te.UnlockBits(tedata);
+                        te.Dispose();
+                    }
+                    {
+                        Bitmap te = new Bitmap(AreaList[i]);
+                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                        IntPtr temp_data = tedata.Scan0;
+
+                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
+
+                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
+                        distortion.Save($@"{SavePath}\{ImgNum}" + "ColorArea.bmp", ImageFormat.Bmp);
+                        te.UnlockBits(tedata);
+                        te.Dispose();
+                    }
+                    {
+                        Bitmap te = new Bitmap(DFList[i]);
+                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                        IntPtr temp_data = tedata.Scan0;
+
+                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
+
+                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
+                        distortion.Save($@"{SavePath}\{ImgNum}" + "Df.bmp", ImageFormat.Bmp);
+                        te.UnlockBits(tedata);
+                        te.Dispose();
+                    }
+                }
 
             }
 
@@ -194,13 +295,17 @@ namespace WindowsFormsApp1
 
             // 경과된 시간을 텍스트 박스에 표시
             correctionTime.Text = elapsedTime.TotalMilliseconds + " ms";
-
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void BtnDistortionRun_Click(object sender, EventArgs e)
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
+
+            if (!(Directory.Exists(SavePath)))
+            {
+                Directory.CreateDirectory(SavePath);
+            }
 
             CalDotarrary();
 
@@ -236,13 +341,21 @@ namespace WindowsFormsApp1
         private void ChkSingle_CheckedChanged(object sender, EventArgs e)
         {
             IsSingleMode = true;
-            IsTotalMode = false;
+            if (ChkSingle.Checked)
+            {
+                ChkTotal.Checked = false;
+                IsTotalMode = false;
+            }        
         }
 
         private void ChkTotal_CheckedChanged(object sender, EventArgs e)
         {
-            IsSingleMode = false;
             IsTotalMode = true;
+            if (ChkTotal.Checked)
+            {
+                ChkSingle.Checked = false;
+                IsSingleMode = false;
+            }
         }
 
         private void BtnTarget_Click(object sender, EventArgs e)
@@ -253,6 +366,32 @@ namespace WindowsFormsApp1
                 if (TargetFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
                 {
                     TextTargetPath.Text = Path.GetFileName(TargetFileDialog.FileName);
+
+                    TargetPath = TargetFileDialog.FileName;
+                }
+            }
+        }
+
+        private void ImageListBox_Select(object sender, EventArgs e)
+        {
+            if (ImageListBox.SelectedItem != null)
+            {
+                SelectImage = ImageListBox.SelectedItem.ToString();
+            }
+        }
+
+        private void BtnVectorMap_Click(object sender, EventArgs e)
+        {
+            CommonOpenFileDialog VectorMapFileDialog = new CommonOpenFileDialog()
+            { InitialDirectory = "", IsFolderPicker = false };
+            {
+                if (VectorMapFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
+                {
+                    TextVectorMap.Text = Path.GetFileName(VectorMapFileDialog.FileName);
+
+                    VectorMapPath = VectorMapFileDialog.FileName;
+
+                    SelectVectorMap = true;
                 }
             }
         }

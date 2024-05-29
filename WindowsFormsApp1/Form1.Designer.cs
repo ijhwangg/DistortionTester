@@ -28,8 +28,8 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.button1 = new System.Windows.Forms.Button();
-            this.button2 = new System.Windows.Forms.Button();
+            this.BtnExtraction = new System.Windows.Forms.Button();
+            this.BtnDistortionRun = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.extractTime = new System.Windows.Forms.TextBox();
@@ -41,32 +41,34 @@
             this.BtnTarget = new System.Windows.Forms.Button();
             this.ChkSingle = new System.Windows.Forms.CheckBox();
             this.ChkTotal = new System.Windows.Forms.CheckBox();
+            this.TextVectorMap = new System.Windows.Forms.TextBox();
+            this.BtnVectorMap = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
-            // button1
+            // BtnExtraction
             // 
-            this.button1.Location = new System.Drawing.Point(32, 297);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(192, 91);
-            this.button1.TabIndex = 0;
-            this.button1.Text = "왜곡보정추출";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.BtnExtraction.Location = new System.Drawing.Point(29, 325);
+            this.BtnExtraction.Name = "BtnExtraction";
+            this.BtnExtraction.Size = new System.Drawing.Size(192, 91);
+            this.BtnExtraction.TabIndex = 0;
+            this.BtnExtraction.Text = "왜곡보정추출";
+            this.BtnExtraction.UseVisualStyleBackColor = true;
+            this.BtnExtraction.Click += new System.EventHandler(this.BtnDistortionRun_Click);
             // 
-            // button2
+            // BtnDistortionRun
             // 
-            this.button2.Location = new System.Drawing.Point(435, 288);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(192, 108);
-            this.button2.TabIndex = 1;
-            this.button2.Text = "왜곡보정실행";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            this.BtnDistortionRun.Location = new System.Drawing.Point(432, 316);
+            this.BtnDistortionRun.Name = "BtnDistortionRun";
+            this.BtnDistortionRun.Size = new System.Drawing.Size(192, 108);
+            this.BtnDistortionRun.TabIndex = 1;
+            this.BtnDistortionRun.Text = "왜곡보정실행";
+            this.BtnDistortionRun.UseVisualStyleBackColor = true;
+            this.BtnDistortionRun.Click += new System.EventHandler(this.BtnExtraction_Click);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(255, 297);
+            this.label1.Location = new System.Drawing.Point(252, 325);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(57, 12);
             this.label1.TabIndex = 2;
@@ -75,7 +77,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(658, 288);
+            this.label2.Location = new System.Drawing.Point(655, 316);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(57, 12);
             this.label2.TabIndex = 3;
@@ -83,14 +85,14 @@
             // 
             // extractTime
             // 
-            this.extractTime.Location = new System.Drawing.Point(246, 347);
+            this.extractTime.Location = new System.Drawing.Point(243, 375);
             this.extractTime.Name = "extractTime";
             this.extractTime.Size = new System.Drawing.Size(100, 21);
             this.extractTime.TabIndex = 4;
             // 
             // correctionTime
             // 
-            this.correctionTime.Location = new System.Drawing.Point(649, 333);
+            this.correctionTime.Location = new System.Drawing.Point(646, 361);
             this.correctionTime.Name = "correctionTime";
             this.correctionTime.Size = new System.Drawing.Size(100, 21);
             this.correctionTime.TabIndex = 5;
@@ -101,7 +103,7 @@
             this.BtnLoadFolder.Name = "BtnLoadFolder";
             this.BtnLoadFolder.Size = new System.Drawing.Size(84, 24);
             this.BtnLoadFolder.TabIndex = 6;
-            this.BtnLoadFolder.Text = "폴더";
+            this.BtnLoadFolder.Text = "폴더 선택";
             this.BtnLoadFolder.UseVisualStyleBackColor = true;
             this.BtnLoadFolder.Click += new System.EventHandler(this.LoadFileBtn_Click);
             // 
@@ -120,28 +122,29 @@
             this.ImageListBox.Name = "ImageListBox";
             this.ImageListBox.Size = new System.Drawing.Size(572, 112);
             this.ImageListBox.TabIndex = 8;
+            this.ImageListBox.SelectedIndexChanged += new System.EventHandler(this.ImageListBox_Select);
             // 
             // TextTargetPath
             // 
-            this.TextTargetPath.Location = new System.Drawing.Point(32, 241);
+            this.TextTargetPath.Location = new System.Drawing.Point(29, 269);
             this.TextTargetPath.Name = "TextTargetPath";
             this.TextTargetPath.Size = new System.Drawing.Size(192, 21);
             this.TextTargetPath.TabIndex = 10;
             // 
             // BtnTarget
             // 
-            this.BtnTarget.Location = new System.Drawing.Point(246, 241);
+            this.BtnTarget.Location = new System.Drawing.Point(243, 269);
             this.BtnTarget.Name = "BtnTarget";
-            this.BtnTarget.Size = new System.Drawing.Size(84, 24);
+            this.BtnTarget.Size = new System.Drawing.Size(100, 24);
             this.BtnTarget.TabIndex = 9;
-            this.BtnTarget.Text = "타겟 선택";
+            this.BtnTarget.Text = "도트 타겟 선택";
             this.BtnTarget.UseVisualStyleBackColor = true;
             this.BtnTarget.Click += new System.EventHandler(this.BtnTarget_Click);
             // 
             // ChkSingle
             // 
             this.ChkSingle.AutoSize = true;
-            this.ChkSingle.Location = new System.Drawing.Point(435, 249);
+            this.ChkSingle.Location = new System.Drawing.Point(432, 277);
             this.ChkSingle.Name = "ChkSingle";
             this.ChkSingle.Size = new System.Drawing.Size(76, 16);
             this.ChkSingle.TabIndex = 11;
@@ -152,7 +155,7 @@
             // ChkTotal
             // 
             this.ChkTotal.AutoSize = true;
-            this.ChkTotal.Location = new System.Drawing.Point(551, 249);
+            this.ChkTotal.Location = new System.Drawing.Point(548, 277);
             this.ChkTotal.Name = "ChkTotal";
             this.ChkTotal.Size = new System.Drawing.Size(76, 16);
             this.ChkTotal.TabIndex = 11;
@@ -160,11 +163,30 @@
             this.ChkTotal.UseVisualStyleBackColor = true;
             this.ChkTotal.CheckedChanged += new System.EventHandler(this.ChkTotal_CheckedChanged);
             // 
+            // TextVectorMap
+            // 
+            this.TextVectorMap.Location = new System.Drawing.Point(32, 215);
+            this.TextVectorMap.Name = "TextVectorMap";
+            this.TextVectorMap.Size = new System.Drawing.Size(572, 21);
+            this.TextVectorMap.TabIndex = 12;
+            // 
+            // BtnVectorMap
+            // 
+            this.BtnVectorMap.Location = new System.Drawing.Point(620, 215);
+            this.BtnVectorMap.Name = "BtnVectorMap";
+            this.BtnVectorMap.Size = new System.Drawing.Size(84, 24);
+            this.BtnVectorMap.TabIndex = 13;
+            this.BtnVectorMap.Text = "벡터 맵 선택";
+            this.BtnVectorMap.UseVisualStyleBackColor = true;
+            this.BtnVectorMap.Click += new System.EventHandler(this.BtnVectorMap_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.BtnVectorMap);
+            this.Controls.Add(this.TextVectorMap);
             this.Controls.Add(this.ChkTotal);
             this.Controls.Add(this.ChkSingle);
             this.Controls.Add(this.TextTargetPath);
@@ -176,8 +198,8 @@
             this.Controls.Add(this.extractTime);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.button2);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.BtnDistortionRun);
+            this.Controls.Add(this.BtnExtraction);
             this.Name = "Form1";
             this.Text = "Form1";
             this.ResumeLayout(false);
@@ -187,8 +209,8 @@
 
         #endregion
 
-        private System.Windows.Forms.Button button1;
-        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button BtnExtraction;
+        private System.Windows.Forms.Button BtnDistortionRun;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox extractTime;
@@ -200,6 +222,8 @@
         private System.Windows.Forms.Button BtnTarget;
         private System.Windows.Forms.CheckBox ChkSingle;
         private System.Windows.Forms.CheckBox ChkTotal;
+        private System.Windows.Forms.TextBox TextVectorMap;
+        private System.Windows.Forms.Button BtnVectorMap;
     }
 }
 
