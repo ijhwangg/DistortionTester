@@ -20,5 +20,8 @@ namespace WindowsFormsApp1
 
         [DllImport(@"CvtImage.dll")]
         public unsafe static extern int Distortion(IntPtr ImageBuffer, float[] vectorX, float[] vectorY, int width, int height, int numCore = 0);
+
+        [DllImport(@"CvtImage.dll")]
+        public unsafe static extern int ChDistortion(IntPtr ImageBuffer, float[] vectorX, float[] vectorY, int width, int height, int numCore = 0);
     }
 }

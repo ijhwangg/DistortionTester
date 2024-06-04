@@ -148,7 +148,7 @@
             this.ChkSingle.Name = "ChkSingle";
             this.ChkSingle.Size = new System.Drawing.Size(76, 16);
             this.ChkSingle.TabIndex = 11;
-            this.ChkSingle.Text = "단일 검사";
+            this.ChkSingle.Text = "단일 보정";
             this.ChkSingle.UseVisualStyleBackColor = true;
             this.ChkSingle.CheckedChanged += new System.EventHandler(this.ChkSingle_CheckedChanged);
             // 
@@ -159,7 +159,7 @@
             this.ChkTotal.Name = "ChkTotal";
             this.ChkTotal.Size = new System.Drawing.Size(76, 16);
             this.ChkTotal.TabIndex = 11;
-            this.ChkTotal.Text = "전체 검사";
+            this.ChkTotal.Text = "전체 보정";
             this.ChkTotal.UseVisualStyleBackColor = true;
             this.ChkTotal.CheckedChanged += new System.EventHandler(this.ChkTotal_CheckedChanged);
             // 

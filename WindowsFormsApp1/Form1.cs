@@ -8,18 +8,22 @@ using System.Windows.Forms;
 using OpenCvSharp;
 using System.Drawing.Imaging;
 using System.Diagnostics;
+using OpenCvSharp.Extensions;
 using Microsoft.WindowsAPICodePack.Dialogs;
+using System.Runtime.InteropServices;
+using System.Windows.Media.Imaging;
 
 namespace WindowsFormsApp1
 {
     public partial class Form1 : Form
     {
+        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory", SetLastError = false)]
+        static extern void CopyMemory(IntPtr dest, IntPtr src, int count);
+
         private float cameraSenSorSize = 3.45f;
         private float magnification = 0.367f;
 
-
         private const float deg = (float)(Math.PI / 180.0);
-
         private int ImageHeight = 3000;
         private int ImageWidth = 4080;
         private int ImageCH = 3;
@@ -33,15 +37,14 @@ namespace WindowsFormsApp1
         private string TargetPath = "";
         private string ImagePath = "";
         private string SelectImage = "";
-        private string SavePath = "DistortionResult";
+        private string SavePath = "왜곡보정후";
 
-        private float dp = 0.5f; //dot 간격 [mm]
+        private float dp = 0.5f; //dot 간격 [mm]     
 
         private List<Point2f> dotCenters = new List<Point2f>();
         private float zoomFactor = 1.0f;
 
         private Mat ShowImg;
-
         private VectorMapGenerator vMapGenerator = new VectorMapGenerator();
 
         public Form1()
@@ -154,6 +157,10 @@ namespace WindowsFormsApp1
 
         private void BtnExtraction_Click(object sender, EventArgs e)
         {
+            if (!(Directory.Exists(ImagePath + "\\" + SavePath)))
+            {
+                Directory.CreateDirectory(ImagePath + "\\" + SavePath);
+            }
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
 
@@ -165,7 +172,6 @@ namespace WindowsFormsApp1
             {
                 LoadVectorMap("_TopCorrection.dat");
             }
-
             if (!IsSingleMode && !IsTotalMode)
             {
                 MessageBox.Show($"검사 모드를 선택해주세요.", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -178,114 +184,49 @@ namespace WindowsFormsApp1
                 }
                 else
                 {
-                    var gn = SelectImage.LastIndexOf("Back");
+                    string imgPath = ImagePath + "\\" + SelectImage;
+                    var gn = SelectImage.LastIndexOf("Btm");
                     var ImgNum = SelectImage.Substring(0, gn);
 
-                    var backList = ImagePath + "\\" + ImgNum + "Back.jpg";
-                    var colorList = ImagePath + "\\" + ImgNum + "Color.jpg";
-                    var AreaList = ImagePath + "\\" + ImgNum + "ColorArea.jpg";
-                    var DFList = ImagePath + "\\" + ImgNum + "Df.jpg";
+                    var i_n = SelectImage.LastIndexOf("]");
+                    var d_n = SelectImage.LastIndexOf(".");
+                    var img_name = SelectImage.Substring(i_n + 1, (d_n - i_n) - 1);
 
-                    {
-                        Bitmap te = new Bitmap(colorList);
-                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                        IntPtr temp_data = tedata.Scan0;
 
-                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
+                    var undistortion = CorrectDistortionForMeasure(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat undistortion_meas = BitmapConverter.ToMat(undistortion);
 
-                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
-                        distortion.Save($@"{SavePath}\{ImgNum}" + "Color.bmp", ImageFormat.Bmp);
-                        te.UnlockBits(tedata);
-                        te.Dispose();
-                    }
-                    {
-                        Bitmap te = new Bitmap(AreaList);
-                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                        IntPtr temp_data = tedata.Scan0;
+                    Mat undistortion_blu = CorrectDistortionForDefect(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat undistortion_bf = CorrectDistortionForDefect(imgPath, 3, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat undistortion_area = CorrectDistortionForDefect(imgPath, 2, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat undistortion_df = CorrectDistortionForDefect(imgPath, 4, VectorX, VectorY, ImageWidth, ImageHeight);
 
-                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
-
-                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
-                        distortion.Save($@"{SavePath}\{ImgNum}" + "ColorArea.bmp", ImageFormat.Bmp);
-                        te.UnlockBits(tedata);
-                        te.Dispose();
-                    }
-                    {
-                        Bitmap te = new Bitmap(DFList);
-                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                        IntPtr temp_data = tedata.Scan0;
-
-                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
-
-                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
-                        distortion.Save($@"{SavePath}\{ImgNum}" + "Df.bmp", ImageFormat.Bmp);
-                        te.UnlockBits(tedata);
-                        te.Dispose();
-                    }
+                    SaveBitmapsToTiff($@"{ImagePath}\{SavePath}\{ImgNum}{img_name}.tif", undistortion_meas, undistortion_blu, undistortion_area, undistortion_bf, undistortion_df);
                 }
             }
             else
             {
-                var backList = Directory.GetFiles(ImagePath, "*Back*.jpg");
-                var colorList = Directory.GetFiles(ImagePath, "*Color*.jpg");
-                var AreaList = Directory.GetFiles(ImagePath, "*ColorArea*.jpg");
-                var DFList = Directory.GetFiles(ImagePath, "*Df*.jpg");
-
-                for (int i = 0; i < backList.Length; i++)
+                string[] img_list = GetImageFiles(ImagePath, new string[] { "*.tiff", "*.bmp", "*.jpg" });
+                for (int i = 0; i < 10; i++)
                 {
-                    var gn = backList[i].LastIndexOf("Back");
-                    var ImgNum = backList[i].Substring(gn - 9, 9);
+                    Console.WriteLine($@"{i} 이미지 왜곡 보정 시작");
 
-                    {
-                        Bitmap te = new Bitmap(backList[i]);
-                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                        IntPtr temp_data = tedata.Scan0;
+                    var i_n = img_list[i].LastIndexOf("]");
+                    var d_n = img_list[i].LastIndexOf(".");
+                    var img_name = img_list[i].Substring(i_n + 1, (d_n - i_n) - 1);
+                    var ImgNum = img_list[i].Substring(i_n - 5, 6);
 
-                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
+                    var undistortion = CorrectDistortionForMeasure(img_list[i], 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat undistortion_meas = BitmapConverter.ToMat(undistortion);
 
-                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
-                        distortion.Save($@"{SavePath}\{ImgNum}" + "Back.bmp", ImageFormat.Bmp);
-                        te.UnlockBits(tedata);
-                        te.Dispose();
-                    }
-                    {
-                        Bitmap te = new Bitmap(colorList[i]);
-                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                        IntPtr temp_data = tedata.Scan0;
+                    Mat undistortion_blu = CorrectDistortionForDefect(img_list[i], 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat undistortion_bf = CorrectDistortionForDefect(img_list[i], 3, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat undistortion_area = CorrectDistortionForDefect(img_list[i], 2, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat undistortion_df = CorrectDistortionForDefect(img_list[i], 4, VectorX, VectorY, ImageWidth, ImageHeight);
 
-                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
-
-                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
-                        distortion.Save($@"{SavePath}\{ImgNum}" + "Color.bmp", ImageFormat.Bmp);
-                        te.UnlockBits(tedata);
-                        te.Dispose();
-                    }
-                    {
-                        Bitmap te = new Bitmap(AreaList[i]);
-                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                        IntPtr temp_data = tedata.Scan0;
-
-                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
-
-                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
-                        distortion.Save($@"{SavePath}\{ImgNum}" + "ColorArea.bmp", ImageFormat.Bmp);
-                        te.UnlockBits(tedata);
-                        te.Dispose();
-                    }
-                    {
-                        Bitmap te = new Bitmap(DFList[i]);
-                        BitmapData tedata = te.LockBits(new Rectangle(0, 0, ImageWidth, ImageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
-                        IntPtr temp_data = tedata.Scan0;
-
-                        dll.Distortion(temp_data, VectorX, VectorY, ImageWidth, ImageHeight);
-
-                        Bitmap distortion = new Bitmap(ImageWidth, ImageHeight, ImageWidth * 3, PixelFormat.Format24bppRgb, temp_data);
-                        distortion.Save($@"{SavePath}\{ImgNum}" + "Df.bmp", ImageFormat.Bmp);
-                        te.UnlockBits(tedata);
-                        te.Dispose();
-                    }
+                    SaveBitmapsToTiff($@"{ImagePath}\{SavePath}\{ImgNum}{img_name}.tif", undistortion_meas, undistortion_blu, undistortion_area, undistortion_bf, undistortion_df);
+                    Console.WriteLine($@"{i} 이미지 왜곡 보정 완료");
                 }
-
             }
 
             stopwatch.Stop();
@@ -301,12 +242,6 @@ namespace WindowsFormsApp1
         {
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
-
-            if (!(Directory.Exists(SavePath)))
-            {
-                Directory.CreateDirectory(SavePath);
-            }
-
             CalDotarrary();
 
             stopwatch.Stop();
@@ -363,6 +298,8 @@ namespace WindowsFormsApp1
             CommonOpenFileDialog TargetFileDialog = new CommonOpenFileDialog()
             { InitialDirectory = "", IsFolderPicker = false };
             {
+                TargetFileDialog.Filters.Add(new CommonFileDialogFilter("Image Files", "*.bmp;*.jpg"));
+
                 if (TargetFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
                 {
                     TextTargetPath.Text = Path.GetFileName(TargetFileDialog.FileName);
@@ -385,6 +322,8 @@ namespace WindowsFormsApp1
             CommonOpenFileDialog VectorMapFileDialog = new CommonOpenFileDialog()
             { InitialDirectory = "", IsFolderPicker = false };
             {
+                VectorMapFileDialog.Filters.Add(new CommonFileDialogFilter("DAT Files", "*.dat"));
+
                 if (VectorMapFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
                 {
                     TextVectorMap.Text = Path.GetFileName(VectorMapFileDialog.FileName);
@@ -394,6 +333,143 @@ namespace WindowsFormsApp1
                     SelectVectorMap = true;
                 }
             }
+        }
+
+        static string[] GetImageFiles(string directoryPath, string[] searchPatterns)
+        {
+            List<string> files = new List<string>();
+
+            // 각 검색 패턴에 대해 파일을 가져옵니다.
+            foreach (string pattern in searchPatterns)
+            {
+                files.AddRange(Directory.GetFiles(directoryPath, pattern));
+            }
+
+            return files.ToArray();
+        }
+
+        public static Mat CorrectDistortionForDefect(string img_path, int index, float[] vectorX, float[] vectorY, int imageWidth, int imageHeight)
+        {
+            using (Bitmap tiffImg = (Bitmap)Image.FromFile(img_path))
+            {
+                tiffImg.SelectActiveFrame(FrameDimension.Page, index);
+                Mat te = BitmapConverter.ToMat(tiffImg);
+
+                Cv2.ImWrite("te.jpg", te);
+                Mat blueChannel, greenChannel, redChannel;
+                SplitChannels(te, out blueChannel, out greenChannel, out redChannel);
+
+                // Assuming dll.ChDistortion modifies the data in place
+                dll.ChDistortion(blueChannel.Data, vectorX, vectorY, imageWidth, imageHeight);
+                dll.ChDistortion(greenChannel.Data, vectorX, vectorY, imageWidth, imageHeight);
+                dll.ChDistortion(redChannel.Data, vectorX, vectorY, imageWidth, imageHeight);
+
+                // Save the undistorted channels to debug if needed
+                Cv2.ImWrite("undistortedRImg.jpg", redChannel);
+                Cv2.ImWrite("undistortedGImg.jpg", greenChannel);
+                Cv2.ImWrite("undistortedBImg.jpg", blueChannel);
+
+                // Merge the corrected channels back into a single 3-channel image
+                Mat undistortedImg = MergeChannels(blueChannel, greenChannel, redChannel);
+
+                // Save the final merged image
+                Cv2.ImWrite("undistortedImg.jpg", undistortedImg);
+
+                return undistortedImg;
+            }
+        }
+
+        public static void SplitChannels(Mat image, out Mat blueChannel, out Mat greenChannel, out Mat redChannel)
+        {
+            // Create an array to hold the individual channel matrices
+            Mat[] channels = new Mat[3];
+
+            // Split the image into individual channels
+            Cv2.Split(image, out channels);
+
+            // Assign the channels to the output variables
+            blueChannel = channels[0];
+            greenChannel = channels[1];
+            redChannel = channels[2];
+        }
+
+        public static Mat MergeChannels(Mat blueChannel, Mat greenChannel, Mat redChannel)
+        {
+            // Create an array to hold the individual channel matrices
+            Mat[] channels = new Mat[] { blueChannel, greenChannel, redChannel };
+
+            // Merge the channels into a single image
+            Mat mergedImage = new Mat();
+            Cv2.Merge(channels, mergedImage);
+
+            return mergedImage;
+        }
+
+        private static Bitmap CorrectDistortionForMeasure(string img_path, int index, float[] vectorX, float[] vectorY, int imageWidth, int imageHeight)
+        {
+            using (Bitmap tiffImg = (Bitmap)Image.FromFile(img_path))
+            {
+                tiffImg.SelectActiveFrame(FrameDimension.Page, index);
+
+                Bitmap te = new Bitmap(tiffImg);
+
+                BitmapData tedata = te.LockBits(new Rectangle(0, 0, imageWidth, imageHeight), ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+                IntPtr tempData = tedata.Scan0;
+
+                dll.Distortion(tempData, vectorX, vectorY, imageWidth, imageHeight);
+
+                Bitmap undistorted_img = new Bitmap(imageWidth, imageHeight, PixelFormat.Format24bppRgb);
+                BitmapData bluData = undistorted_img.LockBits(new Rectangle(0, 0, imageWidth, imageHeight), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+
+                CopyMemory(bluData.Scan0, tempData, imageWidth * imageHeight * 3);
+
+                te.UnlockBits(tedata);
+                undistorted_img.UnlockBits(bluData);
+                te.Dispose();
+
+                return undistorted_img;
+            }
+        }
+
+        static void SaveBitmapsToTiff(string tiffFilePath, params Mat[] mats)
+        {
+            // 첫 번째 이미지를 TIFF로 저장
+            using (Bitmap firstBitmap = mats[0].ToBitmap())
+            {
+                Encoder encoder = Encoder.SaveFlag;
+                EncoderParameters encoderParams = new EncoderParameters(1);
+                ImageCodecInfo codecInfo = GetEncoderInfo("image/tiff");
+
+                encoderParams.Param[0] = new EncoderParameter(encoder, (long)EncoderValue.MultiFrame);
+                firstBitmap.Save(tiffFilePath, codecInfo, encoderParams);
+
+                // 나머지 이미지를 추가
+                encoderParams.Param[0] = new EncoderParameter(encoder, (long)EncoderValue.FrameDimensionPage);
+                for (int i = 1; i < mats.Length; i++)
+                {
+                    using (Bitmap bitmap = mats[i].ToBitmap())
+                    {
+                        firstBitmap.SaveAdd(bitmap, encoderParams);
+                    }
+                }
+
+                // 마지막 이미지 추가
+                encoderParams.Param[0] = new EncoderParameter(encoder, (long)EncoderValue.Flush);
+                firstBitmap.SaveAdd(encoderParams);
+            }
+        }
+
+        static ImageCodecInfo GetEncoderInfo(string mimeType)
+        {
+            ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
+            foreach (ImageCodecInfo encoder in encoders)
+            {
+                if (encoder.MimeType == mimeType)
+                {
+                    return encoder;
+                }
+            }
+            throw new Exception("Encoder not found.");
         }
     }
 }
