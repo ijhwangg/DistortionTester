@@ -21,11 +21,11 @@ namespace WindowsFormsApp1
         static extern void CopyMemory(IntPtr dest, IntPtr src, int count);
 
         private float cameraSenSorSize = 3.45f;
-        private float magnification = 0.367f;
+        private float magnification = 1.0f; // Macro 0.367 Micro 1 Side 0.42
 
         private const float deg = (float)(Math.PI / 180.0);
-        private int ImageHeight = 3000;
-        private int ImageWidth = 4080;
+        private int ImageHeight = 2040;
+        private int ImageWidth = 2440;
         private int ImageCH = 3;
 
         private bool isHandlingEvent = false;

@@ -52,8 +52,8 @@
             this.BtnExtraction.Size = new System.Drawing.Size(192, 91);
             this.BtnExtraction.TabIndex = 0;
             this.BtnExtraction.Text = "왜곡보정추출";
-            this.BtnExtraction.UseVisualStyleBackColor = true;
-            this.BtnExtraction.Click += new System.EventHandler(this.BtnDistortionRun_Click);
+            this.BtnExtraction.UseVisualStyleBackColor = true; 
+            this.BtnExtraction.Click += new System.EventHandler(this.BtnExtraction_Click);
             // 
             // BtnDistortionRun
             // 
@@ -63,7 +63,7 @@
             this.BtnDistortionRun.TabIndex = 1;
             this.BtnDistortionRun.Text = "왜곡보정실행";
             this.BtnDistortionRun.UseVisualStyleBackColor = true;
-            this.BtnDistortionRun.Click += new System.EventHandler(this.BtnExtraction_Click);
+            this.BtnDistortionRun.Click += new System.EventHandler(this.BtnDistortionRun_Click);
             // 
             // label1
             // 
