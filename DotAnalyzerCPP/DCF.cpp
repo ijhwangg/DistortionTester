@@ -157,10 +157,10 @@ public:
 
 		//cv::findContours(invert_circle_img, contours, hierarchy, cv::RetrievalModes::RETR_TREE, cv::ContourApproximationModes::CHAIN_APPROX_NONE);
 
-		//cv::Mat contours_img;
-		//cv::cvtColor(img, contours_img, cv::COLOR_GRAY2BGR);
-		//cv::drawContours(contours_img, contours, -1, cv::Scalar(0, 255, 0), 2);
-		//cv::imwrite("contours_img.bmp", contours_img);
+		cv::Mat contours_img;
+		cv::cvtColor(img, contours_img, cv::COLOR_GRAY2BGR);
+		cv::drawContours(contours_img, contours, -1, cv::Scalar(0, 255, 0), 2);
+		cv::imwrite("contours_img.bmp", contours_img);
 
 		auto imgmof = cv::Mat_<unsigned char>{ grayInv };
 		auto imgptr = imgmof.begin();
@@ -173,7 +173,7 @@ public:
 
 		for (size_t i = 0; i < contours.size(); i++)
 		{
-			if (contours[i].size() > 80)
+			if (contours[i].size() > 50)
 			{
 				GrayVolumeCenter(height, width, imgptr, maskptr, contours[i], center);
 				dotCenters.push_back(center);

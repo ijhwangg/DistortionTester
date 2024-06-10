@@ -64,9 +64,7 @@ namespace WindowsFormsApp1
             float sx = 0;
             float sy = 0;
             IntPtr GrabPtr = IntPtr.Zero;
-            // var temp = new Mat(@"C:\Users\진소미\Desktop\DotTarget\Top Macro.bmp");
             //GetDotCenters의 Input Image는 Gray(1 channel) Image가 되어야 함.
-            //var colorImg = new Mat(@"C:\Users\WTA\Desktop\[WTA]2024\#Issue\0510_왜곡보정_여백채우기\Top Macro.bmp");
             var colorImg = new Mat(TargetPath);
             var grayImg = colorImg.CvtColor(ColorConversionCodes.BGR2GRAY);
             var src = grayImg.DataPointer;
@@ -89,10 +87,7 @@ namespace WindowsFormsApp1
                 dotCenters.Add(new Point2f(x, y));
             }
 
-
-
             //PixelSizeValueBox.Text = pixelSize.ToString("F3");
-
 
             Point2f tiltFactor = new Point2f();
             float maximumDiff = 0.0f;
@@ -104,9 +99,6 @@ namespace WindowsFormsApp1
             vMapGenerator.DrawVectorMap(dotCenters, pixelSize, -rotationAngle, zoomFactor, StartPoint, maximumDiff, 36000, tiltFactor, vectorLength);
 
             vMapGenerator.DistortionCorrection(dotCenters, ref StartPoint, rotationAngle, pixelSize, maximumDiff, 36000, vectorLength);
-            // var Bmps = ShowImg.ToBitmapSource();
-            //vMapGenerator.ShowImg.Dispose();
-            //Bmps.Freeze();
             colorImg.Dispose();
             grayImg.Dispose();
         }
@@ -157,6 +149,19 @@ namespace WindowsFormsApp1
 
         private void BtnExtraction_Click(object sender, EventArgs e)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            CalDotarrary();
+
+            stopwatch.Stop();
+
+            TimeSpan elapsedTime = stopwatch.Elapsed;
+
+            extractTime.Text = elapsedTime.TotalMilliseconds + " ms";
+        }
+
+        private void BtnDistortionRun_Click(object sender, EventArgs e)
+        {
             if (!(Directory.Exists(ImagePath + "\\" + SavePath)))
             {
                 Directory.CreateDirectory(ImagePath + "\\" + SavePath);
@@ -185,70 +190,70 @@ namespace WindowsFormsApp1
                 else
                 {
                     string imgPath = ImagePath + "\\" + SelectImage;
-                    var gn = SelectImage.LastIndexOf("Btm");
-                    var ImgNum = SelectImage.Substring(0, gn);
+                    // 파일 확장자 추출
+                    string FileExtension = Path.GetExtension(imgPath).ToLower();
 
-                    var i_n = SelectImage.LastIndexOf("]");
-                    var d_n = SelectImage.LastIndexOf(".");
-                    var img_name = SelectImage.Substring(i_n + 1, (d_n - i_n) - 1);
+                    // 확장자 확인
+                    if (FileExtension == ".bmp" || FileExtension == ".jpg")
+                    {
+                        var Undistortion = CorrectDistortionForMeasure(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionTarget = BitmapConverter.ToMat(Undistortion);
+                        Cv2.ImWrite("UndistortionTarget.bmp", UndistortionTarget);
+                    }
+                    else
+                    {
+                        var gn = SelectImage.LastIndexOf("Btm");
+                        var ImgNum = SelectImage.Substring(0, gn);
+
+                        var i_n = SelectImage.LastIndexOf("]");
+                        var d_n = SelectImage.LastIndexOf(".");
+                        var img_name = SelectImage.Substring(i_n + 1, (d_n - i_n) - 1);
 
 
-                    var undistortion = CorrectDistortionForMeasure(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
-                    Mat undistortion_meas = BitmapConverter.ToMat(undistortion);
+                        var Undistortion = CorrectDistortionForMeasure(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionMeas = BitmapConverter.ToMat(Undistortion);
 
-                    Mat undistortion_blu = CorrectDistortionForDefect(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
-                    Mat undistortion_bf = CorrectDistortionForDefect(imgPath, 3, VectorX, VectorY, ImageWidth, ImageHeight);
-                    Mat undistortion_area = CorrectDistortionForDefect(imgPath, 2, VectorX, VectorY, ImageWidth, ImageHeight);
-                    Mat undistortion_df = CorrectDistortionForDefect(imgPath, 4, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionBL = CorrectDistortionForDefect(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionBF = CorrectDistortionForDefect(imgPath, 3, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionArea = CorrectDistortionForDefect(imgPath, 2, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionDF = CorrectDistortionForDefect(imgPath, 4, VectorX, VectorY, ImageWidth, ImageHeight);
 
-                    SaveBitmapsToTiff($@"{ImagePath}\{SavePath}\{ImgNum}{img_name}.tif", undistortion_meas, undistortion_blu, undistortion_area, undistortion_bf, undistortion_df);
+                        SaveBitmapsToTiff($@"{ImagePath}\{SavePath}\{ImgNum}{img_name}.tif", 
+                            UndistortionMeas, UndistortionBL, UndistortionBF, UndistortionArea, UndistortionDF);
+
+                    }
                 }
             }
             else
             {
-                string[] img_list = GetImageFiles(ImagePath, new string[] { "*.tiff", "*.bmp", "*.jpg" });
+                string[] ImgList = GetImageFiles(ImagePath, new string[] { "*.tiff", "*.bmp", "*.jpg" });
                 for (int i = 0; i < 10; i++)
                 {
                     Console.WriteLine($@"{i} 이미지 왜곡 보정 시작");
 
-                    var i_n = img_list[i].LastIndexOf("]");
-                    var d_n = img_list[i].LastIndexOf(".");
-                    var img_name = img_list[i].Substring(i_n + 1, (d_n - i_n) - 1);
-                    var ImgNum = img_list[i].Substring(i_n - 5, 6);
+                    var i_n = ImgList[i].LastIndexOf("]");
+                    var d_n = ImgList[i].LastIndexOf(".");
+                    var img_name = ImgList[i].Substring(i_n + 1, (d_n - i_n) - 1);
+                    var ImgNum = ImgList[i].Substring(i_n - 5, 6);
 
-                    var undistortion = CorrectDistortionForMeasure(img_list[i], 1, VectorX, VectorY, ImageWidth, ImageHeight);
-                    Mat undistortion_meas = BitmapConverter.ToMat(undistortion);
+                    var Undistortion = CorrectDistortionForMeasure(ImgList[i], 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat UndistortionMeas = BitmapConverter.ToMat(Undistortion);
 
-                    Mat undistortion_blu = CorrectDistortionForDefect(img_list[i], 1, VectorX, VectorY, ImageWidth, ImageHeight);
-                    Mat undistortion_bf = CorrectDistortionForDefect(img_list[i], 3, VectorX, VectorY, ImageWidth, ImageHeight);
-                    Mat undistortion_area = CorrectDistortionForDefect(img_list[i], 2, VectorX, VectorY, ImageWidth, ImageHeight);
-                    Mat undistortion_df = CorrectDistortionForDefect(img_list[i], 4, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat UndistortionBL = CorrectDistortionForDefect(ImgList[i], 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat UndistortionBF = CorrectDistortionForDefect(ImgList[i], 3, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat UndistortionArea = CorrectDistortionForDefect(ImgList[i], 2, VectorX, VectorY, ImageWidth, ImageHeight);
+                    Mat UndistortionDF = CorrectDistortionForDefect(ImgList[i], 4, VectorX, VectorY, ImageWidth, ImageHeight);
 
-                    SaveBitmapsToTiff($@"{ImagePath}\{SavePath}\{ImgNum}{img_name}.tif", undistortion_meas, undistortion_blu, undistortion_area, undistortion_bf, undistortion_df);
+                    SaveBitmapsToTiff($@"{ImagePath}\{SavePath}\{ImgNum}{img_name}.tif",
+                        UndistortionMeas, UndistortionBL, UndistortionBF, UndistortionArea, UndistortionDF);
                     Console.WriteLine($@"{i} 이미지 왜곡 보정 완료");
                 }
             }
 
             stopwatch.Stop();
 
-            // 경과된 시간 가져오기
             TimeSpan elapsedTime = stopwatch.Elapsed;
-
-            // 경과된 시간을 텍스트 박스에 표시
             correctionTime.Text = elapsedTime.TotalMilliseconds + " ms";
-        }
-
-        private void BtnDistortionRun_Click(object sender, EventArgs e)
-        {
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            CalDotarrary();
-
-            stopwatch.Stop();
-
-            TimeSpan elapsedTime = stopwatch.Elapsed;
-
-            extractTime.Text = elapsedTime.TotalMilliseconds + " ms";
         }
 
         private void LoadFileBtn_Click(object sender, EventArgs e)

@@ -35,8 +35,10 @@ namespace WindowsFormsApp1
 
         public Point2f[,] VMap { get; set; }
 
-        public int ImageHeight = 3000;
-        public int ImageWidth = 4080;
+        //public int ImageHeight = 3000;
+        //public int ImageWidth = 4080;
+        private int ImageHeight = 2040;
+        private int ImageWidth = 2440;
         public int ImageCH = 3;
 
         public void VectorMapShow(Mat img, List<Point2f> points,
@@ -58,7 +60,7 @@ namespace WindowsFormsApp1
 
             MaximumDiff = 0F;
             AverageDiff = 0F;
-            PixelLimitation = 10.0F;
+            PixelLimitation = 150.0F;
 
             if (File.Exists("item.txt"))
             {
