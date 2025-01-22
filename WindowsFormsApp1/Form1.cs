@@ -193,33 +193,32 @@ namespace WindowsFormsApp1
                     // 파일 확장자 추출
                     string FileExtension = Path.GetExtension(imgPath).ToLower();
 
+                    var gn = SelectImage.LastIndexOf("Sid");
+                    var ImgNum = SelectImage.Substring(0, gn);
+
+                    var i_n = SelectImage.LastIndexOf("]");
+                    var d_n = SelectImage.LastIndexOf(".");
+                    var img_name = SelectImage.Substring(i_n + 1, (d_n - i_n) - 1);
                     // 확장자 확인
                     if (FileExtension == ".bmp" || FileExtension == ".jpg")
                     {
-                        var Undistortion = CorrectDistortionForMeasure(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
-                        Mat UndistortionTarget = BitmapConverter.ToMat(Undistortion);
-                        Cv2.ImWrite($"UndistortionTarget.bmp", UndistortionTarget);
+                        //var Undistortion = CorrectDistortionForMeasure(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
+                        var Undistortion = CorrectDistortionForDefect(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
+                        //Mat UndistortionTarget = BitmapConverter.ToMat(Undistortion);
+                        Cv2.ImWrite($"{ImagePath}\\{SavePath}\\{ImgNum}{img_name}.bmp", Undistortion);
                     }
                     else
                     {
-                        var gn = SelectImage.LastIndexOf("Btm");
-                        var ImgNum = SelectImage.Substring(0, gn);
+                        //var Undistortion = CorrectDistortionForMeasure(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
+                        //Mat UndistortionMeas = BitmapConverter.ToMat(Undistortion);
 
-                        var i_n = SelectImage.LastIndexOf("]");
-                        var d_n = SelectImage.LastIndexOf(".");
-                        var img_name = SelectImage.Substring(i_n + 1, (d_n - i_n) - 1);
-
-
-                        var Undistortion = CorrectDistortionForMeasure(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
-                        Mat UndistortionMeas = BitmapConverter.ToMat(Undistortion);
-
-                        Mat UndistortionBL = CorrectDistortionForDefect(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
-                        Mat UndistortionBF = CorrectDistortionForDefect(imgPath, 3, VectorX, VectorY, ImageWidth, ImageHeight);
-                        Mat UndistortionArea = CorrectDistortionForDefect(imgPath, 2, VectorX, VectorY, ImageWidth, ImageHeight);
-                        Mat UndistortionDF = CorrectDistortionForDefect(imgPath, 4, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionBL = CorrectDistortionForDefect(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionBF = CorrectDistortionForDefect(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionArea = CorrectDistortionForDefect(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
+                        Mat UndistortionDF = CorrectDistortionForDefect(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
 
                         SaveBitmapsToTiff($@"{ImagePath}\{SavePath}\{ImgNum}{img_name}.tif", 
-                            UndistortionMeas, UndistortionBL, UndistortionBF, UndistortionArea, UndistortionDF);
+                             UndistortionBL, UndistortionBF, UndistortionArea, UndistortionDF);
 
                     }
                 }
@@ -360,7 +359,7 @@ namespace WindowsFormsApp1
                 tiffImg.SelectActiveFrame(FrameDimension.Page, index);
                 Mat te = BitmapConverter.ToMat(tiffImg);
 
-                Cv2.ImWrite("te.jpg", te);
+                //Cv2.ImWrite("te.jpg", te);
                 Mat blueChannel, greenChannel, redChannel;
                 SplitChannels(te, out blueChannel, out greenChannel, out redChannel);
 
@@ -370,15 +369,15 @@ namespace WindowsFormsApp1
                 dll.ChDistortion(redChannel.Data, vectorX, vectorY, imageWidth, imageHeight);
 
                 // Save the undistorted channels to debug if needed
-                Cv2.ImWrite("undistortedRImg.jpg", redChannel);
-                Cv2.ImWrite("undistortedGImg.jpg", greenChannel);
-                Cv2.ImWrite("undistortedBImg.jpg", blueChannel);
+                //Cv2.ImWrite("undistortedRImg.jpg", redChannel);
+                //Cv2.ImWrite("undistortedGImg.jpg", greenChannel);
+                //Cv2.ImWrite("undistortedBImg.jpg", blueChannel);
 
                 // Merge the corrected channels back into a single 3-channel image
                 Mat undistortedImg = MergeChannels(blueChannel, greenChannel, redChannel);
 
                 // Save the final merged image
-                Cv2.ImWrite("undistortedImg.jpg", undistortedImg);
+                //Cv2.ImWrite("undistortedImg.jpg", undistortedImg);
 
                 return undistortedImg;
             }
