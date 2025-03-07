@@ -12,6 +12,7 @@ using OpenCvSharp.Extensions;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
+using OpenCvSharp.Flann;
 
 namespace WindowsFormsApp1
 {
@@ -193,26 +194,44 @@ namespace WindowsFormsApp1
                     // 파일 확장자 추출
                     string FileExtension = Path.GetExtension(imgPath).ToLower();
 
-                    var gn = SelectImage.LastIndexOf("Top");
+                    var gn = SelectImage.LastIndexOf("게이지블록");
                     var ImgNum = SelectImage.Substring(0, gn);
 
                     var i_n = SelectImage.LastIndexOf("]");
                     var d_n = SelectImage.LastIndexOf(".");
+
+
                     var img_name = SelectImage.Substring(i_n + 1, (d_n - i_n) - 1);
                     // 확장자 확인
                     if (FileExtension == ".bmp" || FileExtension == ".jpg")
                     {
-                        //var Undistortion = CorrectDistortionForMeasure(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
-                        var Undistortion = CorrectDistortionForDefect(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight);
-                        //Mat UndistortionTarget = BitmapConverter.ToMat(Undistortion);
-                        //Cv2.ImWrite($"{ImagePath}\\{SavePath}\\{ImgNum}{img_name}.bmp", Undistortion);
-                        Undistortion.Save($"{ImagePath}\\{SavePath}\\{ImgNum}{img_name}.bmp");
+                        /*for (int i = 0; i < 1000; i++)
+                        {
+
+                            Stopwatch watch = Stopwatch.StartNew();
+
+                            using (Bitmap undistortedImg = CorrectDistortionForDefect(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight))
+                            {
+                                undistortedImg.Save($"{ImagePath}\\{SavePath}\\{i}{img_name}.bmp", ImageFormat.Bmp);
+                            } 
+
+                            stopwatch.Stop();
+
+                            TimeSpan elapsed = stopwatch.Elapsed;
+                            correctionTime.Text = $"{elapsed.TotalMilliseconds} ms";
+
+                            Console.WriteLine($"{i} Test");
+                            Console.WriteLine($"Time: {elapsed.TotalMilliseconds} ms");
+
+                        }*/
+
+                        using (Bitmap undistortedImg = CorrectDistortionForDefect(imgPath, 0, VectorX, VectorY, ImageWidth, ImageHeight))
+                        {
+                            undistortedImg.Save($"{ImagePath}\\{SavePath}\\{img_name}.bmp", ImageFormat.Bmp);
+                        }
                     }
                     else
                     {
-                        //var Undistortion = CorrectDistortionForMeasure(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
-                        //Mat UndistortionMeas = BitmapConverter.ToMat(Undistortion);
-
                         var UndistortionBL = CorrectDistortionForDefect(imgPath, 1, VectorX, VectorY, ImageWidth, ImageHeight);
                         var UndistortionBF = CorrectDistortionForDefect(imgPath, 3, VectorX, VectorY, ImageWidth, ImageHeight);
                         var UndistortionArea = CorrectDistortionForDefect(imgPath, 2, VectorX, VectorY, ImageWidth, ImageHeight);
@@ -373,7 +392,7 @@ namespace WindowsFormsApp1
 
         public static Bitmap CorrectDistortionForDefect(string img_path, int index, float[] vectorX, float[] vectorY, int imageWidth, int imageHeight)
         {
-            using (Bitmap tiffImg = (Bitmap)Image.FromFile(img_path))
+            /*using (Bitmap tiffImg = (Bitmap)Image.FromFile(img_path))
             {
                 tiffImg.SelectActiveFrame(FrameDimension.Page, index);
                 Bitmap te = new Bitmap(tiffImg);
@@ -381,17 +400,43 @@ namespace WindowsFormsApp1
                 IntPtr tempData = tedata.Scan0;
 
                 dll.ChDistortion(tempData, vectorX, vectorY, imageWidth, imageHeight);
-
+                //dll.Distortion(tempData, vectorX, vectorY, imageWidth, imageHeight);
                 Bitmap undistorted_img = new Bitmap(imageWidth, imageHeight, PixelFormat.Format24bppRgb);
                 BitmapData bluData = undistorted_img.LockBits(new Rectangle(0, 0, imageWidth, imageHeight), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
 
                 CopyMemory(bluData.Scan0, tempData, imageWidth * imageHeight * 3);
-
                 te.UnlockBits(tedata);
                 undistorted_img.UnlockBits(bluData);
                 te.Dispose();
 
+
                 return undistorted_img;
+            }*/
+
+            using (Bitmap tiffImg = (Bitmap)Image.FromFile(img_path))
+            {
+                tiffImg.SelectActiveFrame(FrameDimension.Page, index);
+                Bitmap srcBitmap = new Bitmap(tiffImg);
+                BitmapData srcData = srcBitmap.LockBits(new Rectangle(0, 0, imageWidth, imageHeight), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
+
+                IntPtr unmanagedBuffer = Marshal.AllocHGlobal(imageWidth * imageHeight * 3);
+                CopyMemory(unmanagedBuffer, srcData.Scan0, imageWidth * imageHeight * 3);
+
+                dll.ChDistortion(unmanagedBuffer, vectorX, vectorY, imageWidth, imageHeight);
+
+                Bitmap resultBitmap = new Bitmap(imageWidth, imageHeight, PixelFormat.Format24bppRgb);
+                BitmapData resultData = resultBitmap.LockBits(new Rectangle(0, 0, imageWidth, imageHeight), ImageLockMode.WriteOnly, PixelFormat.Format24bppRgb);
+
+                CopyMemory(resultData.Scan0, unmanagedBuffer, imageWidth * imageHeight * 3);
+
+                // 확실한 메모리 해제
+                srcBitmap.UnlockBits(srcData);
+                resultBitmap.UnlockBits(resultData);
+                Marshal.FreeHGlobal(unmanagedBuffer); 
+
+                srcBitmap.Dispose();
+
+                return resultBitmap;
             }
         }
 
